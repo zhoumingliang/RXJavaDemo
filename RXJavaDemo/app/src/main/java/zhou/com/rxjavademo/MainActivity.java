@@ -12,7 +12,10 @@ import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Func0;
 import rx.functions.Func1;
+import rx.functions.Func2;
+import rx.observables.GroupedObservable;
 import rx.schedulers.Schedulers;
 
 /**
@@ -29,9 +32,18 @@ public class MainActivity extends Activity {
 //        scheduce();
 //        map();
 //        flatmap();
-        lift();
+//        lift();
 //        flatmap();
+//        compose();
+//        defer();
+//        merge();
+//        filter();
+//        take();
+//        groupby();
+//        zip();
+        buffer();
     }
+
 
     Subscriber<String> sub = new Subscriber<String>() {
         @Override public void onStart() {
@@ -54,12 +66,114 @@ public class MainActivity extends Activity {
 
     };
 
-    private void defer(){
-//        Observable.defer(new Func0<Observable<? extends Object>>() {
-//            @Override public Observable<? extends Object> call() {
-//                return Observable.just("");
-//            }
-//        })
+    private void buffer(){
+        Observable.just(1, 2, 3, 4, 1).distinct().buffer(2).retry()
+                .subscribe(new Action1<List<Integer>>() {
+                    @Override public void call(List<Integer> integers) {
+                        Log.d("main", integers.toString());
+                    }
+                });
+
+    }
+
+    private void zip(){
+        Observable<String> observable = Observable.just("1");
+        Observable<String> observable1 = Observable.just("2");
+
+
+        Observable.zip(observable, observable1, new Func2<String, String, Object>() {
+            @Override public Object call(String s, String s2) {
+
+                return s+s2;
+            }
+        }).subscribe(new Action1<Object>() {
+            @Override public void call(Object o) {
+                Log.d("main","o="+o);
+            }
+        });
+    }
+
+    private void defer() {
+
+        Observable.defer(new Func0<Observable<String>>() {
+            @Override public Observable<String> call() {
+                return Observable.just("1");
+            }
+        }).subscribe(new Action1<String>() {
+            @Override public void call(String s) {
+                Log.d("main", "call");
+            }
+        });
+    }
+
+    private void merge() {
+        Observable<String> observable = Observable.just("1");
+        Observable<String> observable1 = Observable.just("2");
+        Observable.merge(observable, observable1).subscribe(new Action1<String>() {
+            @Override public void call(String s) {
+                Log.d("main", s);
+            }
+        });
+    }
+
+    private void compose() {
+        Observable.just("1").compose(new Observable.Transformer<String, String>() {
+            @Override public Observable<String> call(Observable<String> stringObservable) {
+                stringObservable.subscribeOn(Schedulers.computation());
+                return stringObservable;
+            }
+        }).subscribe(new Action1<Object>() {
+            @Override public void call(Object o) {
+                Log.d("main", "o=" + o.toString());
+            }
+        });
+    }
+
+    private void filter() {
+        Integer[] arr = {1, 2, 3};
+        Observable.from(arr)
+                .filter(new Func1<Integer, Boolean>() {
+                    @Override public Boolean call(Integer integer) {
+                        return integer == 2;
+                    }
+                }).subscribe(new Action1<Integer>() {
+            @Override public void call(Integer integer) {
+                Log.d("main", integer + "");
+            }
+        });
+    }
+
+    private void take() {
+        Observable.just("1", "2", "3").
+                take(2)
+                .subscribe(new Action1<String>() {
+                    @Override public void call(String s) {
+                        Log.d("main", s);
+                    }
+                });
+    }
+
+    class B{}
+
+    private void groupby() {
+        Observable.just("1", "2", "3", "1", "2", new B())
+                .groupBy(new Func1<Object, String>() {
+                    @Override public String call(Object o) {
+                        if (o instanceof String) {
+                            return "Str";
+                        }
+                        return "B";
+                    }
+                }).subscribe(new Action1<GroupedObservable<String, Object>>() {
+            @Override public void call(GroupedObservable<String, Object> stringObjectGroupedObservable) {
+                Log.d("main", stringObjectGroupedObservable.getKey());
+                stringObjectGroupedObservable.subscribe(new Action1<Object>() {
+                    @Override public void call(Object o) {
+                        Log.d("main",o.toString());
+                    }
+                });
+            }
+        });
     }
 
     private void lift() {
@@ -85,8 +199,8 @@ public class MainActivity extends Activity {
                     }
 
                     @Override public void onNext(Integer integer) {
-                        System.out.println("2>>>>>>:"+integer);
-                        subscriber.onNext(integer+"");
+                        System.out.println("2>>>>>>:" + integer);
+                        subscriber.onNext(integer + "");
                     }
                 };
             }
@@ -100,7 +214,7 @@ public class MainActivity extends Activity {
             }
 
             @Override public void onNext(String s) {
-                System.out.println("3>>>>>>:"+s);
+                System.out.println("3>>>>>>:" + s);
             }
         });
 
@@ -138,14 +252,14 @@ public class MainActivity extends Activity {
         list.add(str2);
         list.add(str3);
         Observable.create(
-        new Observable.OnSubscribe<Integer>() {
-            @Override public void call(Subscriber<? super Integer> subscriber) {
-                System.out.println("1>>>>>>:");
-                subscriber.onNext(1);
-                subscriber.onCompleted();
+                new Observable.OnSubscribe<Integer>() {
+                    @Override public void call(Subscriber<? super Integer> subscriber) {
+                        System.out.println("1>>>>>>:");
+                        subscriber.onNext(1);
+                        subscriber.onCompleted();
 //                subscriber.onError(new RuntimeException());
-            }
-        }).flatMap(new Func1<Integer, Observable<String>>() {
+                    }
+                }).flatMap(new Func1<Integer, Observable<String>>() {
             @Override public Observable<String> call(Integer integer) {
                 System.out.println("2>>>>>>:");
                 return Observable.create(new Observable.OnSubscribe<String>() {
