@@ -41,7 +41,10 @@ public class MainActivity extends Activity {
 //        take();
 //        groupby();
 //        zip();
-        buffer();
+//        buffer();
+//        empty();
+//        never();
+        error();
     }
 
 
@@ -66,8 +69,56 @@ public class MainActivity extends Activity {
 
     };
 
-    private void buffer(){
-        Observable.just(1, 2, 3, 4, 1).distinct().buffer(2).retry()
+    private void error(){
+        Observable.error(new RuntimeException()).subscribe(new Subscriber<Object>() {
+            @Override public void onCompleted() {
+                Log.d("main","onCompleted");
+            }
+
+            @Override public void onError(Throwable e) {
+                Log.d("main","onError");
+            }
+
+            @Override public void onNext(Object o) {
+                Log.d("main","onNext");
+            }
+        });
+    }
+
+    private void never(){
+        Observable.never().subscribe(new Subscriber<Object>() {
+            @Override public void onCompleted() {
+                Log.d("main","onCompleted");
+            }
+
+            @Override public void onError(Throwable e) {
+                Log.d("main","onError");
+            }
+
+            @Override public void onNext(Object o) {
+                Log.d("main","onNext");
+            }
+        });
+    }
+
+    private void empty(){
+        Observable.empty().subscribe(new Subscriber<Object>() {
+            @Override public void onCompleted() {
+                Log.d("main","oncompleted");
+            }
+
+            @Override public void onError(Throwable e) {
+
+            }
+
+            @Override public void onNext(Object o) {
+
+            }
+        });
+    }
+
+    private void buffer() {
+        Observable.just(1, 2, 3, 4, 1).distinct().first().buffer(2).retry()
                 .subscribe(new Action1<List<Integer>>() {
                     @Override public void call(List<Integer> integers) {
                         Log.d("main", integers.toString());
@@ -76,7 +127,7 @@ public class MainActivity extends Activity {
 
     }
 
-    private void zip(){
+    private void zip() {
         Observable<String> observable = Observable.just("1");
         Observable<String> observable1 = Observable.just("2");
 
@@ -84,11 +135,11 @@ public class MainActivity extends Activity {
         Observable.zip(observable, observable1, new Func2<String, String, Object>() {
             @Override public Object call(String s, String s2) {
 
-                return s+s2;
+                return s + s2;
             }
         }).subscribe(new Action1<Object>() {
             @Override public void call(Object o) {
-                Log.d("main","o="+o);
+                Log.d("main", "o=" + o);
             }
         });
     }
@@ -153,7 +204,8 @@ public class MainActivity extends Activity {
                 });
     }
 
-    class B{}
+    class B {
+    }
 
     private void groupby() {
         Observable.just("1", "2", "3", "1", "2", new B())
@@ -169,7 +221,7 @@ public class MainActivity extends Activity {
                 Log.d("main", stringObjectGroupedObservable.getKey());
                 stringObjectGroupedObservable.subscribe(new Action1<Object>() {
                     @Override public void call(Object o) {
-                        Log.d("main",o.toString());
+                        Log.d("main", o.toString());
                     }
                 });
             }
@@ -177,7 +229,6 @@ public class MainActivity extends Activity {
     }
 
     private void lift() {
-
 
         Observable.create(new Observable.OnSubscribe<Integer>() {
             @Override public void call(Subscriber<? super Integer> subscriber) {
