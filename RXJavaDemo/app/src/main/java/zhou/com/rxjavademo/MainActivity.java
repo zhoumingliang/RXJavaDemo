@@ -30,6 +30,7 @@ public class MainActivity extends Activity {
 //        map();
 //        flatmap();
         lift();
+//        flatmap();
     }
 
     Subscriber<String> sub = new Subscriber<String>() {
@@ -51,51 +52,180 @@ public class MainActivity extends Activity {
         }
 
 
-
     };
 
-    private void lift(){
+    private void defer(){
+//        Observable.defer(new Func0<Observable<? extends Object>>() {
+//            @Override public Observable<? extends Object> call() {
+//                return Observable.just("");
+//            }
+//        })
+    }
+
+    private void lift() {
 
 
-        Observable.just("1").lift(new Observable.Operator<String, String>() {
-            @Override public Subscriber<? super String> call(final Subscriber<? super String> subscriber) {
-                return new Subscriber<String>() {
+        Observable.create(new Observable.OnSubscribe<Integer>() {
+            @Override public void call(Subscriber<? super Integer> subscriber) {
+                System.out.println("1>>>>>>:");
+                subscriber.onNext(1);
+                subscriber.onError(new RuntimeException());
+            }
+        }).lift(new Observable.Operator<String, Integer>() {
+            @Override public Subscriber<? super Integer> call(final Subscriber<? super String> subscriber) {
+                return new Subscriber<Integer>() {
                     @Override public void onCompleted() {
+                        System.out.println("2>>>>>>:onCompleted");
                         subscriber.onCompleted();
                     }
 
                     @Override public void onError(Throwable e) {
+                        System.out.println("2>>>>>>:onError");
                         subscriber.onError(e);
                     }
 
-                    @Override public void onNext(String s) {
-                        Log.d("main","lift");
-                        subscriber.onNext(s);
+                    @Override public void onNext(Integer integer) {
+                        System.out.println("2>>>>>>:"+integer);
+                        subscriber.onNext(integer+"");
                     }
                 };
             }
-        }).subscribe(new Action1<String>() {
-            @Override public void call(String s) {
-                Log.d("main","start");
+        }).subscribe(new Subscriber<String>() {
+            @Override public void onCompleted() {
+                System.out.println("3>>>>>>:onCompleted");
+            }
+
+            @Override public void onError(Throwable e) {
+                System.out.println("3>>>>>>:onError");
+            }
+
+            @Override public void onNext(String s) {
+                System.out.println("3>>>>>>:"+s);
             }
         });
+
+//        Observable.just("1").lift(new Observable.Operator<String, String>() {
+//            @Override public Subscriber<? super String> call(final Subscriber<? super String> subscriber) {
+//                return new Subscriber<String>() {
+//                    @Override public void onCompleted() {
+//                        subscriber.onCompleted();
+//                    }
+//
+//                    @Override public void onError(Throwable e) {
+//                        subscriber.onError(e);
+//                    }
+//
+//                    @Override public void onNext(String s) {
+//                        Log.d("main", "lift");
+//                        subscriber.onNext(s);
+//                    }
+//                };
+//            }
+//        }).subscribe(new Action1<String>() {
+//            @Override public void call(String s) {
+//                Log.d("main", "start");
+//            }
+//        });
     }
 
 
-    private void flatmap(){
+    private void flatmap() {
         final List<String[]> list = new ArrayList<>();
-        String[] str1 = {"11","12","13"};
-        String[] str2 = {"21","22","23"};
-        String[] str3 = {"31","32","33"};
+        String[] str1 = {"11", "12", "13"};
+        String[] str2 = {"21", "22", "23"};
+        String[] str3 = {"31", "32", "33"};
         list.add(str1);
         list.add(str2);
         list.add(str3);
-        Observable.from(list)
-                .flatMap(new Func1<String[], Observable<String>>() {
-                    @Override public Observable<String> call(String[] strings) {
-                        return Observable.from(strings);
+        Observable.create(
+        new Observable.OnSubscribe<Integer>() {
+            @Override public void call(Subscriber<? super Integer> subscriber) {
+                System.out.println("1>>>>>>:");
+                subscriber.onNext(1);
+                subscriber.onCompleted();
+//                subscriber.onError(new RuntimeException());
+            }
+        }).flatMap(new Func1<Integer, Observable<String>>() {
+            @Override public Observable<String> call(Integer integer) {
+                System.out.println("2>>>>>>:");
+                return Observable.create(new Observable.OnSubscribe<String>() {
+                    @Override public void call(Subscriber<? super String> subscriber) {
+                        System.out.println("2>>>>>>:call");
+//                        subscriber.onNext("2");
+                        subscriber.onError(new RuntimeException());
                     }
-                }).subscribe(sub);
+                });
+            }
+        })
+                .map(new Func1<String, Integer>() {
+                    @Override public Integer call(String s) {
+                        return 6;
+                    }
+                })
+                .flatMap(new Func1<Integer, Observable<String>>() {
+                    @Override public Observable<String> call(Integer integer) {
+                        return Observable.create(new Observable.OnSubscribe<String>() {
+                            @Override public void call(Subscriber<? super String> subscriber) {
+                                subscriber.onNext("6");
+                            }
+                        });
+                    }
+                })
+
+                .subscribe(new Subscriber<String>() {
+                    @Override public void onCompleted() {
+                        System.out.println("3>>>>>>:onCompleted");
+                    }
+
+                    @Override public void onError(Throwable e) {
+                        System.out.println("3>>>>>>:onError");
+                    }
+
+                    @Override public void onNext(String s) {
+                        System.out.println("4>>>>>>:onNext" + s);
+                    }
+                });
+
+                /*.subscribe(new Action1<Integer>() {
+
+                    @Override public void call(Integer integer) {
+                        System.out.println("4>>>>>>:" + integer);
+                    }
+                });*/
+                /*.flatMap(new Func1<List<String[]>, Observable<Integer>>() {
+                    @Override public Observable<Integer> call(List<String[]> strings) {
+                        Log.d("main", "flatMap");
+                        return Observable.just(1);
+                    }
+                })
+                .subscribe(new Action1<Object>() {
+                    @Override public void call(Object o) {
+                        Log.d("main", "call");
+                    }
+                });*/
+//        Observable.from(list)
+//                .flatMapIterable(new Func1<String[], Iterable<Integer>>() {
+//                    @Override public Iterable<Integer> call(String[] strings) {
+//
+//
+//                        return null;
+//                    }
+//                })
+//                .flatMap(new Func1<Integer, Observable<?>>() {
+//                    @Override public Observable<?> call(Integer integer) {
+//                        return null;
+//                    }
+//                })
+//                .toList()
+//                .subscribe(new Action1<List<Object>>() {
+//                    @Override public void call(List<Object> objects) {
+//
+//                    }
+//                })
+//
+//
+//                .subscribe(sub);
+
 //        Observable.create(new Observable.OnSubscribe<List<String[]>>() {
 //            @Override public void call(Subscriber<? super List<String[]>> subscriber) {
 //                subscriber.onNext(list);
@@ -108,11 +238,11 @@ public class MainActivity extends Activity {
 //        });
     }
 
-    private void map(){
+    private void map() {
         Observable.just(1)
                 .map(new Func1<Integer, String>() {
                     @Override public String call(Integer integer) {
-                        return integer+"";
+                        return integer + "";
                     }
                 }).subscribe(sub);
     }
@@ -129,7 +259,7 @@ public class MainActivity extends Activity {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<String>() {
                     @Override public void call(String s) {
-                        Log.d("main","thread name = "+ Thread.currentThread().getName());
+                        Log.d("main", "thread name = " + Thread.currentThread().getName());
                     }
                 });
     }
